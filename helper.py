@@ -1,60 +1,74 @@
-from queue import PriorityQueue
+# Cost to find the AND and OR path
+def Cost(H, condition, weight = 1):
+	cost = {}
+	if 'AND' in condition:
+		AND_nodes = condition['AND']
+		Path_A = ' AND '.join(AND_nodes)
+		PathA = sum(H[node]+weight for node in AND_nodes)
+		cost[Path_A] = PathA
 
-def uniform_cost_search(start, goal):
-    frontier = PriorityQueue()
-    frontier.put(start, 0)
-    came_from = dict()
-    cost_so_far = dict()
-    came_from[start] = None
-    cost_so_far[start] = 0
+	if 'OR' in condition:
+		OR_nodes = condition['OR']
+		Path_B =' OR '.join(OR_nodes)
+		PathB = min(H[node]+weight for node in OR_nodes)
+		cost[Path_B] = PathB
+	return cost
 
-    while not frontier.empty():
-        current = frontier.get()
+# Update the cost
+def update_cost(H, Conditions, weight=1):
+	Main_nodes = list(Conditions.keys())
+	Main_nodes.reverse()
+	least_cost= {}
+	for key in Main_nodes:
+		condition = Conditions[key]
+		print(key,':', Conditions[key],'>>>', Cost(H, condition, weight))
+		c = Cost(H, condition, weight)
+		H[key] = min(c.values())
+		least_cost[key] = Cost(H, condition, weight)		
+	return least_cost
 
-        if current == goal:
-            break
+# Print the shortest path
+def shortest_path(Start,Updated_cost, H):
+	Path = Start
+	if Start in Updated_cost.keys():
+		Min_cost = min(Updated_cost[Start].values())
+		key = list(Updated_cost[Start].keys())
+		values = list(Updated_cost[Start].values())
+		Index = values.index(Min_cost)
+		
+		# FIND MINIMIMUM PATH KEY
+		Next = key[Index].split()
+		# ADD TO PATH FOR OR PATH
+		if len(Next) == 1:
 
-        for next in get_neighbors(current):
-            new_cost = cost_so_far[current] + 1
-            if next not in cost_so_far or new_cost < cost_so_far[next]:
-                cost_so_far[next] = new_cost
-                priority = new_cost + heuristic(goal, next)
-                frontier.put(next, priority)
-                came_from[next] = current
+			Start =Next[0]
+			Path += '<--' +shortest_path(Start, Updated_cost, H)
+		# ADD TO PATH FOR AND PATH
+		else:
+			Path +='<--('+key[Index]+') '
 
-    return came_from, cost_so_far
+			Start = Next[0]
+			Path += '[' +shortest_path(Start, Updated_cost, H) + ' + '
 
-def get_neighbors(state):
-    n = int(len(state) ** 0.5)
-    zero_index = state.index(0)
-    neighbors = []
+			Start = Next[-1]
+			Path += shortest_path(Start, Updated_cost, H) + ']'
 
-    if zero_index >= n:
-        up = list(state)
-        up[zero_index], up[zero_index - n] = up[zero_index - n], up[zero_index]
-        neighbors.append(tuple(up))
+	return Path
+		
+		
 
-    if zero_index < n * (n - 1):
-        down = list(state)
-        down[zero_index], down[zero_index + n] = down[zero_index + n], down[zero_index]
-        neighbors.append(tuple(down))
+H = {'A': -1, 'B': 5, 'C': 2, 'D': 4, 'E': 7, 'F': 9, 'G': 3, 'H': 0, 'I':0, 'J':0}
 
-    if zero_index % n != 0:
-        left = list(state)
-        left[zero_index], left[zero_index - 1] = left[zero_index - 1], left[zero_index]
-        neighbors.append(tuple(left))
-
-    if zero_index % n != n - 1:
-        right = list(state)
-        right[zero_index], right[zero_index + 1] = right[zero_index + 1], right[zero_index]
-        neighbors.append(tuple(right))
-
-    return neighbors
-def heuristic(goal, next):
-    return sum([1 for (g, n) in zip(goal, next) if g != n])
-
-start = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0)
-goal = (12, 1, 2, 15, 11, 6, 5, 8, 7, 10, 9, 4, 0, 13, 14, 3)
-solution,cost = uniform_cost_search(start, goal)
-print(solution)
-print(cost)
+Conditions = {
+'A': {'OR': ['B'], 'AND': ['C', 'D']},
+'B': {'OR': ['E', 'F']},
+'C': {'OR': ['G'], 'AND': ['H', 'I']},
+'D': {'OR': ['J']}
+}
+# weight
+weight = 1
+# Updated cost
+print('Updated Cost :')
+Updated_cost = update_cost(H, Conditions, weight=1)
+print('*'*75)
+print('Shortest Path :\n',shortest_path('A', Updated_cost,H))
